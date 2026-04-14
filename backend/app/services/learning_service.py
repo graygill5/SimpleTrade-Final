@@ -1,17 +1,16 @@
 from sqlalchemy.orm import Session
 
 from app.models.models import LearningModule, LearningProgress, QuizAttempt, QuizQuestion, RewardLedger, User
+from app.services.ai_service import ai_service
 
 DEFAULT_MODULES = [
-    ("Stock Market Basics", "How stocks and exchanges work", "Stocks represent ownership in a company.", 20),
-    ("ETFs and Diversification", "Risk spreading fundamentals", "ETFs bundle many securities together.", 25),
-    ("Risk Management", "Position sizing and stops", "Protect downside before chasing upside.", 30),
-]
-
-
-DEFAULT_QUESTIONS = [
-    (1, "What does a stock represent?", "Debt,Ownership in a company,Commodity,Currency", "Ownership in a company", "Stocks are equity ownership."),
-    (2, "Why use ETFs?", "Lower diversification,Easy diversification,Higher fees only,No risk", "Easy diversification", "ETFs can reduce single-stock risk."),
+    ("Stock Market Basics", "How stocks and exchanges work", "Stocks represent ownership in public companies.", 20),
+    ("ETFs and Diversification", "Risk spreading fundamentals", "ETFs bundle assets for diversification.", 25),
+    ("Risk Management", "Position sizing and drawdown control", "Protect capital before chasing returns.", 30),
+    ("Technical Analysis Basics", "Trends and momentum", "Use price action for trade timing context.", 20),
+    ("Fundamental Analysis Basics", "Valuation and earnings", "Evaluate business quality and valuation.", 20),
+    ("Trading Psychology", "Decision discipline", "Avoid emotional overtrading and FOMO.", 20),
+    ("Portfolio Construction", "Allocation strategy", "Match risk profile to diversified allocation.", 25),
 ]
 
 
@@ -22,8 +21,17 @@ def seed_learning(db: Session):
         db.commit()
 
     if db.query(QuizQuestion).count() == 0:
-        for m_id, q, opts, correct, exp in DEFAULT_QUESTIONS:
-            db.add(QuizQuestion(module_id=m_id, question=q, options_csv=opts, correct_option=correct, explanation=exp))
+        for module in db.query(LearningModule).all():
+            generated = ai_service.generate_quiz_question(module.title)
+            db.add(
+                QuizQuestion(
+                    module_id=module.id,
+                    question=generated["question"],
+                    options_csv=",".join(generated["options"]),
+                    correct_option=generated["correct_option"],
+                    explanation=generated["explanation"],
+                )
+            )
         db.commit()
 
 

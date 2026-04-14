@@ -5,7 +5,7 @@ from app.api.deps import get_current_user
 from app.db.session import get_db
 from app.models.models import Friendship, Holding, Trade, User
 from app.schemas.portfolio import HoldingOut, TradeOut, TradeRequest
-from app.services.market_service import get_asset
+from app.services.market_data_service import market_data_service
 from app.services.portfolio_service import calculate_portfolio_value, execute_trade
 
 router = APIRouter(prefix="/portfolio", tags=["portfolio"])
@@ -16,7 +16,7 @@ def summary(current_user: User = Depends(get_current_user), db: Session = Depend
     holdings = db.query(Holding).filter(Holding.user_id == current_user.id, Holding.quantity > 0).all()
     rows = []
     for h in holdings:
-        asset = get_asset(h.symbol)
+        asset = market_data_service.quote(h.symbol)
         price = asset["price"] if asset else 0
         market_value = round(price * h.quantity, 2)
         unrealized = round((price - h.avg_cost) * h.quantity, 2)

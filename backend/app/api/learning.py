@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_user
 from app.db.session import get_db
 from app.models.models import LearningModule, LearningProgress, QuizAttempt, QuizQuestion, User
+from app.services.ai_service import ai_service
 from app.services.learning_service import complete_module
 
 router = APIRouter(prefix="/learning", tags=["learning"])
@@ -23,16 +24,15 @@ def modules(db: Session = Depends(get_db), _: User = Depends(get_current_user)):
 @router.get("/module/{module_id}/quiz")
 def module_quiz(module_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
     questions = db.query(QuizQuestion).filter_by(module_id=module_id).all()
-    return [
-        {
-            "id": q.id,
-            "question": q.question,
-            "options": q.options_csv.split(","),
-            "explanation": q.explanation,
-            "correct_option": q.correct_option,
-        }
-        for q in questions
-    ]
+    return [{"id": q.id, "question": q.question, "options": q.options_csv.split(","), "explanation": q.explanation, "correct_option": q.correct_option} for q in questions]
+
+
+@router.get("/module/{module_id}/practice")
+def practice(module_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
+    module = db.get(LearningModule, module_id)
+    if not module:
+        raise HTTPException(status_code=404, detail="Module not found")
+    return ai_service.generate_quiz_question(module.title)
 
 
 @router.post("/complete")

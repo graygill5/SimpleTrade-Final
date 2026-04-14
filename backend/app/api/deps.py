@@ -16,7 +16,7 @@ def get_current_user(
 ) -> User:
     token = credentials.credentials
     try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+        payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.algorithm])
         if payload.get("type") != "access":
             raise ValueError("not access token")
         user_id = int(payload.get("sub"))

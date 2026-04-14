@@ -40,7 +40,7 @@ def login(payload: UserLogin, db: Session = Depends(get_db)):
 @router.post("/refresh", response_model=TokenPair)
 def refresh(payload: RefreshRequest, db: Session = Depends(get_db)):
     try:
-        decoded = jwt.decode(payload.refresh_token, settings.secret_key, algorithms=[settings.algorithm])
+        decoded = jwt.decode(payload.refresh_token, settings.jwt_secret_key, algorithms=[settings.algorithm])
         if decoded.get("type") != "refresh":
             raise ValueError("wrong token")
     except (JWTError, ValueError):

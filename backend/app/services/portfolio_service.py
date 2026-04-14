@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models.models import Achievement, Holding, PortfolioSnapshot, Trade, User
-from app.services.market_service import get_asset
+from app.services.market_data_service import market_data_service
 
 
 def mark_achievement(db: Session, user_id: int, code: str, title: str):
@@ -14,7 +14,7 @@ def mark_achievement(db: Session, user_id: int, code: str, title: str):
 def execute_trade(db: Session, user: User, symbol: str, side: str, quantity: float) -> Trade:
     symbol = symbol.upper().strip()
     side = side.lower().strip()
-    asset = get_asset(symbol)
+    asset = market_data_service.quote(symbol)
     if not asset:
         raise ValueError("Unknown symbol")
     if side not in {"buy", "sell"}:
@@ -67,7 +67,8 @@ def calculate_portfolio_value(db: Session, user: User) -> float:
     holdings = db.query(Holding).filter(Holding.user_id == user.id, Holding.quantity > 0).all()
     holdings_val = 0.0
     for h in holdings:
-        price = get_asset(h.symbol)["price"] if get_asset(h.symbol) else 0
+        quote = market_data_service.quote(h.symbol)
+        price = quote["price"] if quote else 0
         holdings_val += h.quantity * price
     return round(user.cash_balance + holdings_val, 2)
 
